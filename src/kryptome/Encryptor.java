@@ -1,8 +1,6 @@
 package kryptome;
-import java.security.Key;
-import java.util.Base64;
-import java.util.Scanner;
 import java.security.MessageDigest;
+import java.util.Base64;
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 
@@ -11,35 +9,57 @@ import javax.crypto.spec.SecretKeySpec;
  */
 
 public class Encryptor {
+    private final String secret_key_str;
+    private final SecretKeySpec secret_key;
     
-    public byte[] cifrar(String input_str) throws Exception{
-        final byte[] bytes_array = input_str.getBytes("UTF-8");
-        final Cipher aes = getCipher(true);
-        final byte[] cifrado = aes.doFinal(bytes_array);
-        return cifrado;
+   // Contructor
+    public Encryptor(String secret_key) throws Exception{
+        this.secret_key_str = secret_key; // User secret_key input
+        this.secret_key = generateSecretKey(); // SecretKeySpec generated
     }
     
-    public String decifrar(byte[] cifrado) throws Exception{
-        final Cipher aes = getCipher(false);
-        final byte[] bytes = aes.doFinal(cifrado);
-        final String decifrado = new String(bytes, "UTF-8");
-        return decifrado;
-    }
     
-    private Cipher getCipher(boolean do_encript) throws Exception{
-        final String message = "Issac#corona72216";
+     // Private methods for the class
+    private SecretKeySpec generateSecretKey() throws Exception{
+        /*
+            This method generate a hash value from the secret key
+            of the user.
+            After create a SecretKeySpec to use with the Cipher
+        */
         final MessageDigest digest = MessageDigest.getInstance("SHA");
-        digest.update(message.getBytes("UTF-8"));
-        final SecretKeySpec key = new SecretKeySpec(digest.digest(),0,16,"AES");
-        
+        digest.update(this.secret_key_str.getBytes("UTF-8"));
+        final SecretKeySpec key = new SecretKeySpec(digest.digest(), 0, 16, "AES");
+        return key;
+    }
+    
+    
+    private Cipher getCipherManager(boolean is_encryption) throws Exception{
         final Cipher aes = Cipher.getInstance("AES/ECB/PKCS5Padding");
-        
-        if(do_encript){
-            aes.init(Cipher.ENCRYPT_MODE, key);
+        if(is_encryption){
+            aes.init(Cipher.ENCRYPT_MODE, this.secret_key);
         }else{
-            aes.init(Cipher.DECRYPT_MODE, key);
+            aes.init(Cipher.DECRYPT_MODE, this.secret_key);
         }
         return aes;
+    }
+    
+    
+    // Public methods      
+    public String encryptInput(String input_str) throws Exception{
+        final byte[] input_bytes_array = input_str.getBytes("UTF-8");
+        final Cipher aes_encryptor = getCipherManager(true);
+        final byte[] input_encrypted = aes_encryptor.doFinal(input_bytes_array);
+        
+        String input_encrypted_str = Base64.getEncoder().encodeToString(input_encrypted);
+        return input_encrypted_str;
+    }
+    
+   
+    public String decryptInput(String inputString) throws Exception{
+        final byte[] input_encrypted = Base64.getDecoder().decode(inputString);
+        final Cipher aes_decryptor = getCipherManager(false);
+        final byte[] input_decrypter_array = aes_decryptor.doFinal(input_encrypted);
+        return new String(input_decrypter_array, "UTF-8");
     }
     
 }
